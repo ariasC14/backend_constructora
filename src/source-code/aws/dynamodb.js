@@ -4,6 +4,7 @@ const {
   GetCommand,
   PutCommand,
   DeleteCommand,
+  ScanCommand
 } = require("@aws-sdk/lib-dynamodb");
 
 const { AWS_REGION, DYNAMODB_TABLE } = require("../utils/constants");
@@ -31,7 +32,7 @@ const getDynamoDBItem = async (key) => {
     console.error(error);
     throw error;
   }
-}
+};
 
 const putDynamoDBItem = async (item) => {
   const params = {
@@ -47,7 +48,7 @@ const putDynamoDBItem = async (item) => {
     console.error(error);
     throw error;
   }
-}
+};
 
 const deleteDynamoDBItem = async (key) => {
   const params = {
@@ -63,10 +64,27 @@ const deleteDynamoDBItem = async (key) => {
     console.error(error);
     throw error;
   }
-}
+};
+
+const scanDynamoDBItems = async () => {
+  const params = {
+    TableName: DYNAMODB_TABLE,
+  };
+  console.info("SCAN PARAMS", params);
+
+  try {
+    const command = new ScanCommand(params);
+    const response = await dynamodb.send(command);
+    return response.Items;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
 
 module.exports = {
   getDynamoDBItem,
   putDynamoDBItem,
   deleteDynamoDBItem,
+  scanDynamoDBItems,
 };

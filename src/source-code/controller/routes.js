@@ -1,34 +1,23 @@
 const express = require("express");
-const multer = require('multer');
 const { StatusCodes } = require("http-status-codes");
 
-const upload = multer({ storage: multer.memoryStorage() });
-
-// Importing the functions from the DynamoDB SDK
 const {
   putDynamoDBItem,
   getDynamoDBItem,
   deleteDynamoDBItem,
+  scanDynamoDBItems,  // Importar la nueva función
 } = require("../aws/dynamodb");
-
-// Importing the functions from the S3 SDK
-const {
-  uploadS3File,
-  ListS3Files,
-  getS3File,
-  deleteS3File,
-} = require("../aws/s3");
 
 const api = express.Router();
 
-// Endpoint para crear un proyecto de vivienda (POST, GET, DELETE)
+api.use(express.json());
+
 api.route("/create-project")
-  // POST: Crear un proyecto
   .post(async (request, response) => {
     try {
-      const projectData = request.body; // Utiliza los datos del cuerpo de la solicitud
+      const projectData = request.body;
+      console.log("Datos recibidos:", projectData);
 
-      // Guardar el proyecto en DynamoDB
       await putDynamoDBItem(projectData);
 
       response
@@ -42,12 +31,11 @@ api.route("/create-project")
     }
   });
 
-// GET: Obtener un proyecto
 api.get("/create-project/:id", async (request, response) => {
   try {
-    const projectId = request.params.id; // Utiliza el ID proporcionado en los parámetros de ruta
+    const projectId = request.params.id;
+    console.log("ID del proyecto solicitado:", projectId);
 
-    // Obtener el proyecto de DynamoDB utilizando el ID proporcionado
     const project = await getDynamoDBItem({ id: projectId });
 
     if (project) {
@@ -61,12 +49,11 @@ api.get("/create-project/:id", async (request, response) => {
   }
 });
 
-// DELETE: Eliminar un proyecto
 api.delete("/create-project/:id", async (request, response) => {
   try {
-    const projectId = request.params.id; // Se utiliza el ID proporcionado en los parámetros de ruta
+    const projectId = request.params.id;
+    console.log("ID del proyecto a eliminar:", projectId);
 
-    // Eliminar el proyecto de DynamoDB utilizando el ID proporcionado
     await deleteDynamoDBItem({ id: projectId });
 
     response.status(StatusCodes.OK).json({ msg: "Proyecto eliminado correctamente" });
@@ -75,39 +62,15 @@ api.delete("/create-project/:id", async (request, response) => {
     response.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ msg: "Internal Server Error" });
   }
 });
-/*
-api.post("/path2", upload.single("file"), async (request, response) => {
+
+api.get("/projects", async (request, response) => {
   try {
-    console.info("BODY", request.file);
-
-    const fileInfo = request.file;
-    console.info("FILE INFO", fileInfo);
-
-    const { originalname, buffer, mimetype } = fileInfo;
-
-    // Subir un archivo a S3
-    await uploadS3File({ key: originalname, buffer, mimetype });
-
-    // Listar todos los archivos de S3
-    const s3Files = await ListS3Files();
-    console.info("S3 Files", s3Files);
-
-    // Obtener el archivo de S3
-    const s3File = await getS3File(originalname);
-    console.info(`S3 File With Name ${originalname}`, s3File);
-
-    // Eliminar el archivo de S3
-    await deleteS3File(originalname);
-
-    response
-      .status(StatusCodes.OK)
-      .json({ msg: "Hello from path2" });
+    const projects = await scanDynamoDBItems();
+    response.status(StatusCodes.OK).json({ projects });
   } catch (error) {
-    console.error("Error", error);
-    response
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ msg: "Internal Server Error" });
+    console.error("Error al obtener todos los proyectos", error);
+    response.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ msg: "Error al obtener todos los proyectos" });
   }
 });
-*/
+
 module.exports = api;
